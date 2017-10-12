@@ -16,52 +16,79 @@ import (
 )
 
 //Auth 认证信息配置
-type Auth struct {
+type authenticate struct {
 	AccessID  string
 	AccessKey string
-	tts       TTS
+	TTSConfig *TTS
+}
+
+func GetAuth(accessID string, accessKey string) *authenticate {
+	auth := &authenticate{
+		AccessID:  accessID,
+		AccessKey: accessKey,
+		TTSConfig: &TTS{
+			EncodeType:            "mp3",
+			VoiceName:             "xiaoyun",
+			Volume:                50,
+			SampleRate:            16000,
+			SpeechRate:            0,
+			PitchRate:             0,
+			TssNus:                1,
+			BackgroundMusicID:     -1,
+			BackgroundMusicOffset: 0,
+			BackgroundMusicVolume: 50,
+		},
+	}
+	return auth
 }
 
 //API 阿里云地址
-var API = "https://nlsapi.aliyun.com/speak?encode_type=pcm"
+var API = "https://nlsapi.aliyun.com/speak"
 
 //getAuth 获取认证字符串
-func (auth Auth) getAuth(text string, date string) string {
+func (auth authenticate) getAuth(text string, date string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(text))
-	bodyMD5 := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	bodyMD5 := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 	mac := hmac.New(sha1.New, []byte(auth.AccessKey))
-	feature := fmt.Sprintf("%s\n%s\n%s\n%s\n%s", "POST", "audio/pcm,application/json", bodyMD5, "text/plain", date)
+	feature := fmt.Sprintf("%s\n%s\n%s\n%s\n%s", "POST", fmt.Sprintf("audio/%s,application/json", auth.TTSConfig.GetEncodeType()), bodyMD5, "text/plain", date)
 	mac.Write([]byte(feature))
 	macHash := mac.Sum(nil)
 	return base64.StdEncoding.EncodeToString(macHash)
 }
-func (auth Auth) GetUrlParams() string {
+func (auth authenticate) GetUrlParams() string {
 	v := &url.Values{}
-	v.Add("encode_type", auth.tts.GetEncodeType())
-	v.Add("voice_name", auth.tts.GetVoiceName())
-	v.Add("volume", auth.tts.GetVolume())
-	v.Add("sample_rate", auth.tts.GetSampleRate())
-	v.Add("speech_rate", auth.tts.GetSpeechRate())
-	v.Add("pitch_rate", auth.tts.GetPitchRate())
+	v.Add("encode_type", auth.TTSConfig.GetEncodeType())
+	v.Add("voice_name", auth.TTSConfig.GetVoiceName())
+	v.Add("volume", auth.TTSConfig.GetVolume())
+	v.Add("sample_rate", auth.TTSConfig.GetSampleRate())
+	v.Add("speech_rate", auth.TTSConfig.GetSpeechRate())
+	v.Add("pitch_rate", auth.TTSConfig.GetPitchRate())
+	v.Add("tts_nus", auth.TTSConfig.GetTTSnus())
+	backgroundMusicID := auth.TTSConfig.GetBackgroundMusicID()
+	if backgroundMusicID != "-1" {
+		v.Add("background_music_id", backgroundMusicID)
+		v.Add("background_music_offset", auth.TTSConfig.GetBackgroundMusicOffset())
+		v.Add("background_music_volume", auth.TTSConfig.GetBackgroundMusicVolume())
+	}
+
 	return v.Encode()
 }
 
 //GetVoice 根据文本获取声音
 //Params: text: 合成声音的文本
 //Return 声音[]byte和error
-func (auth Auth) GetVoice(text string) ([]byte, error) {
+func (auth authenticate) GetVoice(text string) ([]byte, error) {
 	client := &http.Client{}
 	date := time.Now().Local().Format("Mon, 02 Jan 2006 15:04:05 MST")
 	apiURL := fmt.Sprintf("%s?%s", API, auth.GetUrlParams())
-	fmt.Println(apiURL)
-	req, err := http.NewRequest("POST", API, bytes.NewReader([]byte(text)))
+	req, err := http.NewRequest("POST", apiURL, bytes.NewReader([]byte(text)))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Dataplus %s:%s", auth.AccessID, auth.getAuth(text, date)))
 	req.Header.Add("Content-Type", "text/plain")
-	req.Header.Add("accept", "audio/pcm,application/json")
+	req.Header.Add("accept", fmt.Sprintf("audio/%s,application/json", auth.TTSConfig.GetEncodeType()))
 	req.Header.Add("date", date)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -80,7 +107,7 @@ func (auth Auth) GetVoice(text string) ([]byte, error) {
 }
 
 //SaveVoice 存储声音文件
-func (auth Auth) SaveVoice(text string, dist string) error {
+func (auth authenticate) SaveVoice(text string, dist string) error {
 	voice, err := auth.GetVoice(text)
 	if err != nil {
 		return err
