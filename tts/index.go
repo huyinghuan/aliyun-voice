@@ -118,6 +118,6 @@ func (auth authenticate) SaveVoice(text string, dist string) error {
 		return err
 	}
 	file.Write(voice)
-	file.Close()
+	//file.Close()
 	return nil
 }
