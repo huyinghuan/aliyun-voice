@@ -27,7 +27,7 @@ func TestSaveVoice(t *testing.T) {
 	}
 	voiceFile := filepath.Join(myself.HomeDir, "Desktop", "a.mp3")
 	auth := &Auth{AccessID: ALIYUNACCESSID, AccessKey: ALIYUNACCESSKEY}
-	if err := auth.SaveVoice("你好,明天见吧", voiceFile); err != nil {
+	if err := auth.SaveVoice("窗前明月光，地上鞋一双", voiceFile); err != nil {
 		t.Error(err)
 		t.Fail()
 	}

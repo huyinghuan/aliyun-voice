@@ -23,15 +23,15 @@ type Auth struct {
 }
 
 //API 阿里云地址
-var API = "https://nlsapi.aliyun.com/speak?encode_type=pcm"
+var API = "https://nlsapi.aliyun.com/speak?encode_type=mp3"
 
 //getAuth 获取认证字符串
 func (auth Auth) getAuth(text string, date string) string {
 	hasher := md5.New()
 	hasher.Write([]byte(text))
-	bodyMD5 := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+	bodyMD5 := base64.StdEncoding.EncodeToString(hasher.Sum(nil))
 	mac := hmac.New(sha1.New, []byte(auth.AccessKey))
-	feature := fmt.Sprintf("%s\n%s\n%s\n%s\n%s", "POST", "audio/pcm,application/json", bodyMD5, "text/plain", date)
+	feature := fmt.Sprintf("%s\n%s\n%s\n%s\n%s", "POST", "audio/mp3,application/json", bodyMD5, "text/plain", date)
 	mac.Write([]byte(feature))
 	macHash := mac.Sum(nil)
 	return base64.StdEncoding.EncodeToString(macHash)
@@ -61,7 +61,7 @@ func (auth Auth) GetVoice(text string) ([]byte, error) {
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Dataplus %s:%s", auth.AccessID, auth.getAuth(text, date)))
 	req.Header.Add("Content-Type", "text/plain")
-	req.Header.Add("accept", "audio/pcm,application/json")
+	req.Header.Add("accept", "audio/mp3,application/json")
 	req.Header.Add("date", date)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -91,6 +91,6 @@ func (auth Auth) SaveVoice(text string, dist string) error {
 		return err
 	}
 	file.Write(voice)
-	file.Close()
+	//file.Close()
 	return nil
 }
