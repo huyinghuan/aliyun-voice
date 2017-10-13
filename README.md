@@ -1,4 +1,4 @@
-## 阿里云 智能语音识别 SDK
+# 阿里云 智能语音识别 SDK
 
   GO 语言版本
 
@@ -10,34 +10,34 @@ Install
 go get https://github.com/huyinghuan/aliyun-voice
 ```
 
-### TTS 【语音合成服务】
+## TTS 【语音合成服务】
 
 package:
 ```
 "github.com/huyinghuan/aliyun-voice/tts"
 ```
 
-#### tts.GetAuth(accessID string, accessKey string)
+### tts.GetAuth(accessID string, accessKey string):*Auth
 
 阿里云认证。
 ```
   auth := tts.GetAuth(ALIYUNACCESSID, ALIYUNACCESSKEY)
 ```
 
-##### auth.GetVoice(text string):([]byte, error)
+### auth.GetVoice(text string):([]byte, error)
 
 获取语音文件字节数组，或抛出错误。
 
-#####  auth.SaveVoice(text string, dist string):error
+###  auth.SaveVoice(text string, dist string):error
 
 存储语音文件到指定目录【dist】，或抛出错误。
 
-#### auth.tts
+### auth.TTSConfig
 
 设置语音文件属性,参考：https://help.aliyun.com/document_detail/52793.html?spm=5176.doc30422.6.587.Z6Muvv
 
 ```
-auth.tts = &auth.TTS{
+auth.TTSConfig = &auth.TTS{
   EncodeType            string
 	VoiceName             string
 	Volume                int //0-100
@@ -51,7 +51,23 @@ auth.tts = &auth.TTS{
 }
 ```
 
-#### Example
+or 
+
+```
+auth.TTSConfig.EncodeType = xxxxx 
+auth.TTSConfig.Volume = 90
+...
+```
+
+### Test
+
+填写 `tts/index_test.go`的 `ALIYUNACCESSID` 和`ALIYUNACCESSKEY`
+
+```
+go test aliyun-voice/tts -v
+```
+
+### Example
 
 ```
 package main
