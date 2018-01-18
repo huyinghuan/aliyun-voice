@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"time"
+  "log"
+  "sync"
 )
 
 //Auth 认证信息配置
@@ -74,11 +76,131 @@ func (auth authenticate) GetUrlParams() string {
 
 	return v.Encode()
 }
+//长文本处理
+func ProcessLogText(plain string)[]string{
+  plain = strings.Replace(plain,"、", "、|", -1)
+  plain = strings.Replace(plain,"，", "，|", -1)
+  plain = strings.Replace(plain,"。", "。|", -1)
+  plain = strings.Replace(plain,"；", "；|", -1)
+  plain = strings.Replace(plain,"？", "？|", -1)
+  plain = strings.Replace(plain,"！", "！|", -1)
+  plain = strings.Replace(plain,",", ",|", -1)
+  plain = strings.Replace(plain,";", ";|", -1)
+  plain = strings.Replace(plain,"\\?", "?|", -1)
+  plain = strings.Replace(plain,"!", "!|", -1)
+  arr:= strings.Split(plain, "|")
+  textArr:=[]string{}
+  i := 0
+  length:=len(arr)
+  for i < length{
+    item := strings.TrimSpace(arr[i])
+    if len(item) > 100{
+      textArr = append(textArr, item)
+      i = i + 1
+      continue
+    }
+    for len(item) < 100 && i < length - 1{
+      if len(item + arr[i+1]) > 200{
+        break
+      }
+      item = item + arr[i+1]
+      i = i + 1
+    }
+    textArr = append(textArr, item)
+    i = i + 1
+  }
+  return textArr
+}
+
+//GetLongVoice 获取长文本声音。
+func (auth authenticate) GetLongVoice(text string)(voice[]byte, err []error){
+  textList := ProcessLogText(text)
+  voiceBodyList := make([][]byte, len(textList))
+  var wg sync.WaitGroup
+  wg.Add(len(textList))
+  emptyVoice:=map[int]string{}
+  for index, text := range textList{
+    go func(index int, text string){
+      defer wg.Done()
+      body,e:=auth.GetVoice(text)
+      if e!=nil{
+        log.Println(e)
+        emptyVoice[index] = text
+        return
+      }
+      if len(body) == 0{
+        emptyVoice[index] = text
+      }else{
+        voiceBodyList[index] = body
+      }
+    }(index, text)
+  }
+  wg.Wait()
+
+  //错误情况重试最大
+  tryMAXCount := 5
+  tryIndex := 0
+  errorMap := map[int]error{}
+  for tryIndex < tryMAXCount && len(emptyVoice) != 0{
+    for key, value := range emptyVoice{
+      body,e:=auth.GetVoice(value)
+      if e!=nil{
+        errorMap[key]= e
+        log.Println(e)
+        return
+      }
+      if len(body) == 0{
+        emptyVoice[key] = value
+      }else{
+        voiceBodyList[key] = body
+        delete(emptyVoice, key)
+        delete(errorMap, key)
+      }
+    }
+    tryIndex++
+  }
+  if len(emptyVoice)!= 0{
+    for key, value := range emptyVoice{
+      errorMap[key] = fmt.Errorf("索引:%d,语音内容获取失败:%s\n",key, value)
+    }
+  }
+  if len(errorMap)!=0{
+    errList := make([]error, len(errorMap))
+    for _,value:=range errorMap{
+      errList = append(errList, value)
+    }
+    return nil, errList
+  }
+  voiceAll := []byte{}
+  for i:=0; i < len(voiceBodyList); i++{
+    voiceAll = append(voiceAll, voiceBodyList[i]...)
+  }
+
+  return voiceAll,nil
+}
+
+//SaveLongVoice 保存长文本声音
+func (auth authenticate) SaveLongVoice(text string, dist string)[]error{
+  file, err := os.Create(dist)
+  if err!=nil{
+    return []error{err}
+  }
+  body, errList:=auth.GetLongVoice(text)
+  if errList != nil{
+    return errList
+  }
+  defer file.Close()
+  if _, err = file.Write(body); err!=nil{
+    return []error{err}
+  }
+  return nil
+}
 
 //GetVoice 根据文本获取声音
 //Params: text: 合成声音的文本
 //Return 声音[]byte和error
 func (auth authenticate) GetVoice(text string) ([]byte, error) {
+  text = strings.TrimSpace(text)
 	client := &http.Client{}
 	date := time.Now().Local().Format("Mon, 02 Jan 2006 15:04:05 MST")
 	apiURL := fmt.Sprintf("%s?%s", API, auth.GetUrlParams())
@@ -97,9 +219,13 @@ func (auth authenticate) GetVoice(text string) ([]byte, error) {
 	defer resp.Body.Close()
 	contentType := resp.Header.Get("content-type")
 	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+  if err != nil {
+    return nil, err
+  }
+	if len(text)!= 0 && len(respBody)==0{
+	  log.Printf("⚠️警告阿里云API响应内容为空，准备重试:%s\n", text,)
+	  return respBody, nil
+  }
 	if strings.Contains(contentType, "json") {
 		return nil, fmt.Errorf(string(respBody))
 	}

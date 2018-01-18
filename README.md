@@ -32,6 +32,14 @@ package:
 
 存储语音文件到指定目录【dist】，或抛出错误。
 
+### auth.GetLongVoice(text string):([]byte, []error)
+
+获取长文本文件字节数组，或抛出错误
+
+### auth.SaveLongVoice(text string, dist string):[]error
+
+存储语音文件到指定目录【dist】，或抛出错误。
+
 ### auth.TTSConfig
 
 设置语音文件属性,参考：https://help.aliyun.com/document_detail/52793.html?spm=5176.doc30422.6.587.Z6Muvv
