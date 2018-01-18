@@ -76,45 +76,10 @@ func (auth authenticate) GetUrlParams() string {
 
 	return v.Encode()
 }
-//长文本处理
-func ProcessLogText(plain string)[]string{
-  plain = strings.Replace(plain,"、", "、|", -1)
-  plain = strings.Replace(plain,"，", "，|", -1)
-  plain = strings.Replace(plain,"。", "。|", -1)
-  plain = strings.Replace(plain,"；", "；|", -1)
-  plain = strings.Replace(plain,"？", "？|", -1)
-  plain = strings.Replace(plain,"！", "！|", -1)
-  plain = strings.Replace(plain,",", ",|", -1)
-  plain = strings.Replace(plain,";", ";|", -1)
-  plain = strings.Replace(plain,"\\?", "?|", -1)
-  plain = strings.Replace(plain,"!", "!|", -1)
-  arr:= strings.Split(plain, "|")
-  textArr:=[]string{}
-  i := 0
-  length:=len(arr)
-  for i < length{
-    item := strings.TrimSpace(arr[i])
-    if len(item) > 100{
-      textArr = append(textArr, item)
-      i = i + 1
-      continue
-    }
-    for len(item) < 100 && i < length - 1{
-      if len(item + arr[i+1]) > 200{
-        break
-      }
-      item = item + arr[i+1]
-      i = i + 1
-    }
-    textArr = append(textArr, item)
-    i = i + 1
-  }
-  return textArr
-}
 
 //GetLongVoice 获取长文本声音。
 func (auth authenticate) GetLongVoice(text string)(voice[]byte, err []error){
-  textList := ProcessLogText(text)
+  textList := processLogText(text)
   voiceBodyList := make([][]byte, len(textList))
   var wg sync.WaitGroup
   wg.Add(len(textList))
@@ -171,12 +136,7 @@ func (auth authenticate) GetLongVoice(text string)(voice[]byte, err []error){
     }
     return nil, errList
   }
-  voiceAll := []byte{}
-  for i:=0; i < len(voiceBodyList); i++{
-    voiceAll = append(voiceAll, voiceBodyList[i]...)
-  }
-
-  return voiceAll,nil
+  return getMergeBytesByType(auth.TTSConfig.EncodeType, voiceBodyList),nil
 }
 
 //SaveLongVoice 保存长文本声音
