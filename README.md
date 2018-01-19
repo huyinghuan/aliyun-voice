@@ -132,10 +132,18 @@ type ARSConfig struct{
 
 ### ars.GetOneWord(voice []byte)(result map[string]string, err error)
 
-获取语音识别结果。 返回字段见 [识别结果返回](https://help.aliyun.com/document_detail/52787.html)
+获取一句话【低于1分钟的语音】语音识别结果。 返回字段见 [识别结果返回](https://help.aliyun.com/document_detail/52787.html)
 
-注意，这里的默认音频文件格式为 `wav`, 频率为 `16000`, 语音模型为: `chat` 更多格式 见[RestfulAPI] (https://help.aliyun.com/document_detail/52787.html)
+注意，这里的默认音频文件格式为 `wav`, 【频率为 `16000`， 当设置音频格式为wav时, 会自动分析当前频率，不需要填写】, 语音模型为: `chat` 更多格式 见[RestfulAPI] (https://help.aliyun.com/document_detail/52787.html)
 
+### ars.GetOneWordByFile(filePath string)(result map[string]string, err error)
+
+获取一句话音频文件【低于1分钟的语音文件】的识别结果
+
+
+### 长音频识别
+
+[TODO]
 
 ### 测试用例
 

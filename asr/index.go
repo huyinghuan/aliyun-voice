@@ -57,6 +57,9 @@ func (auth authenticate) getAuth(voice []byte, date string) string {
 }
 
 func (auth *authenticate) GetOneWord(voice []byte)(result map[string]string,err error){
+  if auth.ASRConfig.ContentType == "wav"{
+    auth.ASRConfig.SampleRate = getInt(voice[24:28])
+  }
   client := &http.Client{}
   date := time.Now().Local().Format("Mon, 02 Jan 2006 15:04:05 MST")
   apiURL := fmt.Sprintf("%s?model=%s", API, auth.ASRConfig.Model)
@@ -80,4 +83,12 @@ func (auth *authenticate) GetOneWord(voice []byte)(result map[string]string,err 
   }
   json.Unmarshal(respBody, &result)
   return result, nil
+}
+
+func (auth *authenticate) GetOneWordByFile(voiceFile string)(result map[string]string, err error){
+  voice, fileErr :=ioutil.ReadFile(voiceFile)
+  if fileErr!=nil{
+    return nil, fileErr
+  }
+  return auth.GetOneWord(voice)
 }
