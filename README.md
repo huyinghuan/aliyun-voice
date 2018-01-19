@@ -125,7 +125,7 @@ package:
 ```
 type ARSConfig struct{
       Model string //语音模型
-      ContentType string //编码
+      ContentType string //编码  可选: pcm, wav, opu, opus, speex
       SampleRate int //采样率
 }
 ```
