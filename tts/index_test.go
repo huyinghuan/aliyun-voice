@@ -22,9 +22,10 @@ func TestGetVoice(t *testing.T) {
 
 func TestSaveVoice(t *testing.T) {
 	myself, _ := user.Current()
-	voiceFile := filepath.Join(myself.HomeDir, "Desktop", "a.mp3")
+	voiceFile := filepath.Join(myself.HomeDir, "Desktop", "test.wav")
 	auth := GetAuth(ALIYUNACCESSID, ALIYUNACCESSKEY)
 	auth.TTSConfig.VoiceName = "xiaogang"
+	auth.TTSConfig.EncodeType = "wav"
 	if err := auth.SaveVoice("窗前明月光，地上鞋一双", voiceFile); err != nil {
 		t.Error(err)
 		t.Fail()

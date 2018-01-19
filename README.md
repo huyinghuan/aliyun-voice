@@ -27,6 +27,8 @@ package:
 ### auth.GetVoice(text string):([]byte, error)
 
 获取语音文件字节数组，或抛出错误。
+`注意！！！  有时候 语音文件会返回空字节数组，这时是由于aliyun api不稳定造成。
+由于aliyun api不会报错，因此这里也不会作为错误抛出，需要自己捕获空字节数组进行处理`
 
 ###  auth.SaveVoice(text string, dist string):error
 
@@ -103,3 +105,38 @@ func main() {
 	}
 }
 ```
+
+## ASR 【语音识别服务】
+
+package:
+```
+"github.com/huyinghuan/aliyun-voice/asr"
+```
+
+
+### ars.GetAuth(accessID string, accessKey string):*Auth
+
+阿里云认证。
+```
+  auth := ars.GetAuth(ALIYUNACCESSID, ALIYUNACCESSKEY)
+```
+
+### ars.ARSConfig 音频文件属性设置
+```
+type ARSConfig struct{
+      Model string //语音模型
+      ContentType string //编码
+      SampleRate int //采样率
+}
+```
+
+### ars.GetOneWord(voice []byte)(result map[string]string, err error)
+
+获取语音识别结果。 返回字段见 [识别结果返回](https://help.aliyun.com/document_detail/52787.html)
+
+注意，这里的默认音频文件格式为 `wav`, 频率为 `16000`, 语音模型为: `chat` 更多格式 见[RestfulAPI] (https://help.aliyun.com/document_detail/52787.html)
+
+
+### 测试用例
+
+见 `asr/index_test`  里面的音频文件是由```tts```通过文字生成提供的。
